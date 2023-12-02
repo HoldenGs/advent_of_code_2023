@@ -37,3 +37,18 @@ def get_possible_games(input_file, max_cubes):
             
         
 print(sum(get_possible_games('input_day_2.txt', {"red": 12, "blue": 14, "green": 13})))
+
+
+def get_sum_of_powers_of_games(input_file):
+    """Returns the number of possible games"""
+    with open(input_file) as f:
+        data = f.readlines()
+        sum = 0
+        for line in data:
+            game = int(line.split(':')[0].split(' ')[1])
+            mred, mblue, mgreen = get_max_cubes(line.split(':')[1])
+            sum += mred * mblue * mgreen
+    
+    return sum
+
+print(get_sum_of_powers_of_games('input_day_2.txt'))
