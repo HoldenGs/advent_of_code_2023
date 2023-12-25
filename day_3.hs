@@ -2,6 +2,8 @@
 import System.IO
 import Control.Monad
 import Data.Char (isDigit)
+import Debug.Trace
+import Data.List (nub)
 
 splitString :: String -> ([(Int, Int, Int)], [(Int, Int)])
 
@@ -14,6 +16,24 @@ splitString input = go (0, 0) Nothing ([], []) input
       | otherwise = go (x + 1, y) Nothing ((start_x, start_y, n) : fst acc, (x, y) : snd acc) cs
     go (x, y) Nothing acc (c:cs)
       | isDigit c = go (x + 1, y) (Just (x, y, fromEnum c - fromEnum '0')) acc cs
+      | c == '.'  = go (x + 1, y) Nothing acc cs
+      | c == '\n' = go (0, y + 1) Nothing acc cs
+      | otherwise = go (x + 1, y) Nothing (fst acc, (x, y) : snd acc) cs
+    go (x, y) (Just (start_x, start_y, n)) acc [] = (reverse ((start_x, start_y, n) : fst acc), reverse (snd acc))
+    go (x, y) Nothing acc [] = (reverse $ fst acc, reverse $ snd acc)
+
+
+splitStringStr :: String -> ([(Int, Int, String)], [(Int, Int)])
+
+splitStringStr input = go (0, 0) Nothing ([], []) input
+  where
+    go (x, y) (Just (start_x, start_y, n)) acc (c:cs)
+      | isDigit c = go (x + 1, y) (Just (start_x, start_y, n ++ [c])) acc cs
+      | c == '.'  = go (x + 1, y) Nothing ((start_x, start_y, n) : fst acc, snd acc) cs
+      | c == '\n' = go (0, y + 1) Nothing ((start_x, start_y, n) : fst acc, snd acc) cs
+      | otherwise = go (x + 1, y) Nothing ((start_x, start_y, n) : fst acc, (x, y) : snd acc) cs
+    go (x, y) Nothing acc (c:cs)
+      | isDigit c = go (x + 1, y) (Just (x, y, [c])) acc cs
       | c == '.'  = go (x + 1, y) Nothing acc cs
       | c == '\n' = go (0, y + 1) Nothing acc cs
       | otherwise = go (x + 1, y) Nothing (fst acc, (x, y) : snd acc) cs
@@ -46,19 +66,42 @@ part_sum input =
     in
         foldl (\acc num -> acc + (find_adjacent num $ snd nums_symbols)) 0 (fst nums_symbols)
 
+get_gear_ratio :: (Int, Int) -> [(Int, Int, String)] -> Int
+
+get_gear_ratio symbol nums =
+    let
+        adjacents = [(x_n, y_n, num) | x <- [(fst symbol) - 1..(fst symbol) + 1], y <- [(snd symbol) - 1..(snd symbol) + 1], (x_n, y_n, num) <- nums,
+                    x_n <= x && (x_n + length num - 1) >= x, y_n == y]
+        u_adj = map (\(x, y, num) -> num) $ nub adjacents
+    in
+        if (length u_adj) == 2
+        then
+            (read (u_adj !! 0)::Int) * (read (u_adj !! 1)::Int)
+        else 0
+
+gear_ratios :: String -> Int
+
+gear_ratios input =
+    let
+        nums_symbols = splitStringStr input
+    in
+        foldl (\acc symbol -> acc + (get_gear_ratio symbol $ fst nums_symbols)) 0 (snd nums_symbols)
+
+
 main = do
-    -- let test_input = "467..114..\n\
-    --                 \...*......\n\
-    --                 \..35..633.\n\
-    --                 \......#...\n\
-    --                 \617*......\n\
-    --                 \.....+.58.\n\
-    --                 \..592.....\n\
-    --                 \......755.\n\
-    --                 \...$.*....\n\
-    --                 \.664.598.."
+    let test_input = "467..114..\n\
+                    \...*......\n\
+                    \..35..633.\n\
+                    \......#...\n\
+                    \617*......\n\
+                    \.....+.58.\n\
+                    \..592.....\n\
+                    \......755.\n\
+                    \...$.*....\n\
+                    \.664.598..\n"
     contents <- readFile "input_day_3.txt"
-    print $ part_sum contents
+    --print $ splitStringStr test_input
+    print $ gear_ratios contents
     
 
 
